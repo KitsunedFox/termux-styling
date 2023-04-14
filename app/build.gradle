@@ -4,6 +4,7 @@ plugins {
 }
 
 android {
+    namespace 'com.termux.styling'
     compileSdkVersion 32
 
      defaultConfig {
