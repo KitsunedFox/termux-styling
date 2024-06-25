@@ -6,13 +6,20 @@ plugins {
 android {
     namespace "com.termux.styling"
 
+    compileSdk project.properties.compileSdkVersion.toInteger()
+
+    def appVersionName = System.getenv("TERMUX_STYLING_APP_BUILD__APP_VERSION_NAME") ?: ""
+    def apkVersionTag = System.getenv("TERMUX_STYLING_APP_BUILD__APK_VERSION_TAG") ?: ""
+
      defaultConfig {
         applicationId "com.termux.styling"
-        minSdkVersion 26
-        targetSdkVersion 28
-        compileSdk 34
-        versionCode 31
-        versionName "0.31"
+        minSdk project.properties.minSdkVersion.toInteger()
+        targetSdk project.properties.targetSdkVersion.toInteger()
+        versionCode 1000
+        versionName "0.32.1"
+
+        if (appVersionName) versionName = appVersionName
+        validateVersionName(versionName)
     }
 
     signingConfigs {
@@ -45,14 +52,27 @@ android {
         jvmTarget = '11'
     }
 
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            outputFileName = new File("termux-styling-app_" +
+                    (apkVersionTag ? apkVersionTag : "v" + versionName + "+" + variant.buildType.name) + ".apk")
+        }
+    }
 }
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 }
 
-tasks.register("versionName") {
+task versionName {
     doLast {
         print android.defaultConfig.versionName
     }
+}
+
+def validateVersionName(String versionName) {
+    // https://semver.org/spec/v2.0.0.html#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+    // ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
+    if (!java.util.regex.Pattern.matches("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?\$", versionName))
+        throw new GradleException("The versionName '" + versionName + "' is not a valid version as per semantic version '2.0.0' spec in the format 'major.minor.patch(-prerelease)(+buildmetadata)'. https://semver.org/spec/v2.0.0.html.")
 }
